@@ -1,10 +1,10 @@
 # IIITA Open Source Community Forum Repository:
 
 ### Group Members:
-- Mridankan Mandal: IIB2024017
-- Aditya Pachauri: IIB2024001
-- Ankit Ekka: IIB2024012
-- Dhannu Ram Meena: IIB2024033
+1. Mridankan Mandal: IIB2024017.
+2. Aditya Pachauri: IIB2024001.
+3. Ankit Ekka: IIB2024012.
+4. Dhannu Ram Meena: IIB2024033.
 
 ## 1. Project Introduction:
 1. This repository contains the complete implementation, vulnerability analysis, and security remediation for the IIIT Allahabad Open Source Community Forum web application.

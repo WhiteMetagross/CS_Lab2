@@ -1,10 +1,10 @@
 # IIITA Open Source Community Forum Version 2:
 
 ### Group Members:
-- Mridankan Mandal: IIB2024017
-- Aditya Pachauri: IIB2024001
-- Ankit Ekka: IIB2024012
-- Dhannu Ram Meena: IIB2024033
+1. Mridankan Mandal: IIB2024017.
+2. Aditya Pachauri: IIB2024001.
+3. Ankit Ekka: IIB2024012.
+4. Dhannu Ram Meena: IIB2024033.
 
 ## 1. Project Overview:
 1. This project represents Version 2 of the fullstack community discussion and chatting forum built for the IIIT Allahabad Open Source Community.
@@ -46,5 +46,27 @@ npm start
 ```
 5. Access Portal: Open `http://localhost:3000` in your web browser.
 
-## 6. Security Defense Documentation:
+## 6. Visual Interface and Defense Verification:
+
+### 6.1 Community Discussions Dashboard:
+![Secured community discussion board displaying categorized threads and community updates.](screenshots/forum_home.png)
+1. The main forum dashboard provides a clean overview of community discussions and category navigation.
+
+### 6.2 Secured Discussion Thread:
+![Individual discussion thread view showing author credentials and verified community replies.](screenshots/discussion_thread.png)
+1. Discussion posts render safely with strict sanitization applied across all user responses.
+
+### 6.3 Neutralized XSS Attack Defense:
+![Discussion thread demonstrating DOMPurify sanitization stripping hazardous event handlers safely.](screenshots/sanitized_xss_defense.png)
+1. The DOMPurify engine sanitizes incoming markup before DOM insertion, completely neutralizing injected scripts and preventing unauthorized cookie access.
+
+### 6.4 Realtime Community Chat Stream:
+![Protected live chat room interface with realtime message synchronization.](screenshots/live_chat_room.png)
+1. Community members communicate in realtime within protected chat channels protected by Content Security Policy headers.
+
+### 6.5 Member Profiles Directory:
+![Community member directory displaying participant roles and detailed technical biographies.](screenshots/member_profiles.png)
+1. Public member profiles list community contributors, administrators, and students with isolated session cookies.
+
+## 7. Security Defense Documentation:
 1. Please inspect `XSSAttackDefense.md` for a detailed breakdown of all implemented defenses, source code references, and attack neutralization examples.

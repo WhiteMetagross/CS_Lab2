@@ -1,10 +1,10 @@
 # IIITA Open Source Community Forum:
 
 ### Group Members:
-- Mridankan Mandal: IIB2024017
-- Aditya Pachauri: IIB2024001
-- Ankit Ekka: IIB2024012
-- Dhannu Ram Meena: IIB2024033
+1. Mridankan Mandal: IIB2024017.
+2. Aditya Pachauri: IIB2024001.
+3. Ankit Ekka: IIB2024012.
+4. Dhannu Ram Meena: IIB2024033.
 
 ## 1. Project Overview:
 1. This project is a fullstack community chatting and discussion forum designed for the IIIT Allahabad Open Source Community.
@@ -48,5 +48,31 @@ npm start
 ```
 5. Access Portal: Open `http://localhost:3000` in your web browser.
 
-## 6. Vulnerability Documentation:
+## 6. Visual Interface and Stored XSS Demonstration:
+
+### 6.1 Community Discussions Portal:
+![Main community forum interface displaying active discussions and category filters.](screenshots/forum_home.png)
+1. The primary discussion dashboard displays all published community topics, categorized sections, and discussion statistics.
+
+### 6.2 Interactive Discussion Thread:
+![Detailed discussion thread view displaying published responses and community comments.](screenshots/discussion_thread.png)
+1. Members can view individual discussion posts, author roles, and replies left by community participants.
+
+### 6.3 Stored XSS Payload Injection:
+![Attacker injecting an unneutralized image error payload into the discussion comment box.](screenshots/stored_xss_payload_injection.png)
+1. An attacker submits a malicious HTML tag with an inline JavaScript event handler into the comment box.
+
+### 6.4 Stored XSS Execution and Cookie Exfiltration:
+![Browser executing the stored XSS payload and popping up an alert box with the session cookie.](screenshots/stored_xss_alert_execution.png)
+1. When any user opens the discussion, the unescaped payload executes immediately in the browser session, exposing the active session cookie.
+
+### 6.5 Live Community Chat Channel:
+![Realtime community chat channel with live synchronized conversation stream.](screenshots/live_chat_room.png)
+1. The realtime chat interface allows logged in members to send instant updates across the campus developer network.
+
+### 6.6 Member Directory and Profiles:
+![Community member directory displaying registered participants, assigned roles, and biographies.](screenshots/member_profiles.png)
+1. The member directory lists all registered community participants along with their assigned roles and profiles.
+
+## 7. Vulnerability Documentation:
 1. Please inspect `Vulnerable.md` for the complete exploitation walkthrough, code analysis, and payload examples.
