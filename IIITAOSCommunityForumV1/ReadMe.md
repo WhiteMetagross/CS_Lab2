@@ -7,7 +7,7 @@
 
 ## 2. Technology Stack:
 1. Backend: Node.js with Express framework for REST API routing and session management.
-2. Database: Embedded SQLite 3 database using node:sqlite storing records in forum.db.
+2. Database: Embedded SQLite 3 database using `node:sqlite` storing records in `server/forum.db`.
 3. Frontend: React framework bundled via Vite into static assets served directly by Express.
 4. User Interface: Clean, professional white theme with vibrant colored card borders, custom badges, and zero emojis.
 
@@ -19,19 +19,28 @@
 5. Member Directory: Public member profiles displaying user roles and editable biographies.
 
 ## 4. Preconfigured Community Accounts:
-1. Mridankan Mandal: Username is mridankan and password is mridankan123 with Administrator role.
-2. Ankit Ekka: Username is ankit and password is ankit123 with Contributor role.
-3. Dhannu Meena: Username is dhannu and password is dhannu123 with Contributor role.
-4. Aditya Pachauri: Username is aditya and password is aditya123 with Student role.
-5. Sayan Samajpati: Username is sayan and password is sayan123 with Student role.
-6. Lucky Raut: Username is lucky and password is lucky123 with Student role.
+1. Mridankan Mandal: Username is `mridankan` and password is `mridankan123` with `Administrator` role.
+2. Ankit Ekka: Username is `ankit` and password is `ankit123` with `Contributor` role.
+3. Dhannu Meena: Username is `dhannu` and password is `dhannu123` with `Contributor` role.
+4. Aditya Pachauri: Username is `aditya` and password is `aditya123` with `Student` role.
+5. Sayan Samajpati: Username is `sayan` and password is `sayan123` with `Student` role.
+6. Lucky Raut: Username is `lucky` and password is `lucky123` with `Student` role.
 
 ## 5. Local Setup and Installation:
 1. Prerequisites: Ensure Node.js version 18 or higher and npm are installed on the system.
-2. Installation: Open terminal in this folder and execute npm install.
-3. Client Build: Compile frontend assets by executing npm run build.
-4. Start Application: Launch the server by executing npm start.
-5. Access Portal: Open http://localhost:3000 in your web browser.
+2. Installation: Open terminal in this folder and execute:
+```bash
+npm install
+```
+3. Client Build: Compile frontend assets by executing:
+```bash
+npm run build
+```
+4. Start Application: Launch the server by executing:
+```bash
+npm start
+```
+5. Access Portal: Open `http://localhost:3000` in your web browser.
 
 ## 6. Vulnerability Documentation:
-1. Please inspect Vulnerable.md for the complete exploitation walkthrough, code analysis, and payload examples.
+1. Please inspect `Vulnerable.md` for the complete exploitation walkthrough, code analysis, and payload examples.
