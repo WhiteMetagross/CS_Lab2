@@ -1,5 +1,11 @@
 # IIITA Open Source Community Forum Version 2:
 
+### Group Members:
+- Mridankan Mandal: IIB2024017
+- Aditya Pachauri: IIB2024001
+- Ankit Ekka: IIB2024012
+- Dhannu Ram Meena: IIB2024033
+
 ## 1. Project Overview:
 1. This project represents Version 2 of the fullstack community discussion and chatting forum built for the IIIT Allahabad Open Source Community.
 2. In this version, the Stored Cross Site Scripting vulnerability present in Version 1 has been completely mitigated through multilayered defense mechanisms.

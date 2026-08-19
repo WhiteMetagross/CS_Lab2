@@ -1,5 +1,11 @@
 # IIITA Open Source Community Forum:
 
+### Group Members:
+- Mridankan Mandal: IIB2024017
+- Aditya Pachauri: IIB2024001
+- Ankit Ekka: IIB2024012
+- Dhannu Ram Meena: IIB2024033
+
 ## 1. Project Overview:
 1. This project is a fullstack community chatting and discussion forum designed for the IIIT Allahabad Open Source Community.
 2. The web application allows students, faculty members, and project coordinators to create discussion threads, leave comments, participate in live community chats, and manage member profiles.
