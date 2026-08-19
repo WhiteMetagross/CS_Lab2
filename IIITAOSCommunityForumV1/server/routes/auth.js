@@ -121,10 +121,10 @@ router.get('/me', authenticate, (req, res) => {
   return res.json({ user: fresh || req.user });
 });
 
-// Update Bio / Profile
-router.put('/profile', authenticate, (req, res) => {
+// Update Bio / Profile (Vulnerable to CSRF: Accepts POST and PUT without anti-CSRF token or SameSite validation)
+const handleProfileUpdate = (req, res) => {
   if (!req.user) {
-    return res.status(401).json({ error: 'Authentication required.' });
+    return res.status(401).json({ error: 'Authentication required. No valid session cookie found.' });
   }
   const { full_name, bio } = req.body;
   const db = getDB();
@@ -136,8 +136,14 @@ router.put('/profile', authenticate, (req, res) => {
   );
 
   const updated = db.prepare('SELECT id, username, full_name, role, bio FROM users WHERE id = ?').get(req.user.id);
-  return res.json({ message: 'Profile updated', user: updated });
-});
+  req.user.full_name = updated.full_name;
+  req.user.bio = updated.bio;
+
+  return res.json({ message: 'Profile updated successfully', user: updated });
+};
+
+router.put('/profile', authenticate, handleProfileUpdate);
+router.post('/profile', authenticate, handleProfileUpdate);
 
 // List Users for Member Directory
 router.get('/users', (req, res) => {

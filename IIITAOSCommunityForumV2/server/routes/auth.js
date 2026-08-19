@@ -1,13 +1,19 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const { getDB } = require('../database');
 
 // In-memory active session tokens map (token -> user)
 const sessions = new Map();
 
-// Generate secure random token
+// Generate secure random session token
 function generateToken() {
-  return 'iiita_sess_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+  return 'iiita_sess_' + crypto.randomBytes(24).toString('hex');
+}
+
+// Generate cryptographically secure anti-CSRF synchronizer token
+function generateCsrfToken() {
+  return crypto.randomBytes(32).toString('hex');
 }
 
 // Middleware to extract user from session cookie or Authorization header
@@ -20,6 +26,53 @@ function authenticate(req, res, next) {
   }
   next();
 }
+
+// Anti-CSRF Verification Middleware: Validates Origin, Referer, and Anti-CSRF Token
+function verifyCsrf(req, res, next) {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    return next();
+  }
+
+  // 1. Origin and Referer Header Verification
+  const origin = req.headers.origin;
+  const referer = req.headers.referer;
+  const allowedOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+
+  if (origin && !allowedOrigins.includes(origin)) {
+    return res.status(403).json({
+      error: 'CSRF Blocked: Cross-origin state modification rejected. Untrusted Origin: ' + origin
+    });
+  }
+
+  if (referer) {
+    const isAllowedReferer = allowedOrigins.some(allowed => referer.startsWith(allowed));
+    if (!isAllowedReferer) {
+      return res.status(403).json({
+        error: 'CSRF Blocked: Cross-origin state modification rejected. Untrusted Referer: ' + referer
+      });
+    }
+  }
+
+  // 2. Anti-CSRF Synchronizer Token Verification
+  const submittedToken = req.headers['x-csrf-token'] || req.body?.csrf_token || req.query?.csrf_token;
+  const expectedToken = req.user?.csrfToken;
+
+  if (!submittedToken || !expectedToken || submittedToken !== expectedToken) {
+    return res.status(403).json({
+      error: 'CSRF Protection: Missing or invalid anti-CSRF synchronizer token.'
+    });
+  }
+
+  next();
+}
+
+// Endpoint to fetch Anti-CSRF Token for authenticated clients
+router.get('/csrf-token', authenticate, (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required to obtain anti-CSRF token.' });
+  }
+  return res.json({ csrfToken: req.user.csrfToken });
+});
 
 // Register
 router.post('/register', (req, res) => {
@@ -40,18 +93,20 @@ router.post('/register', (req, res) => {
       VALUES (?, ?, ?, ?, ?)
     `).run(username.trim().toLowerCase(), password, full_name.trim(), 'Student', bio || '');
 
+    const csrfToken = generateCsrfToken();
     const user = {
       id: Number(result.lastInsertRowid),
       username: username.trim().toLowerCase(),
       full_name: full_name.trim(),
       role: 'Student',
-      bio: bio || ''
+      bio: bio || '',
+      csrfToken
     };
 
     const token = generateToken();
     sessions.set(token, user);
 
-    // Defense: Secure cookie configuration with HttpOnly to prevent JavaScript access
+    // Defense: Strict SameSite and HttpOnly session cookies
     res.cookie('session_token', token, {
       httpOnly: true,
       sameSite: 'strict',
@@ -61,7 +116,14 @@ router.post('/register', (req, res) => {
     return res.json({
       message: 'Registration successful',
       token,
-      user
+      csrfToken,
+      user: {
+        id: user.id,
+        username: user.username,
+        full_name: user.full_name,
+        role: user.role,
+        bio: user.bio
+      }
     });
   } catch (err) {
     return res.status(500).json({ error: 'Failed to create user account: ' + err.message });
@@ -82,18 +144,20 @@ router.post('/login', (req, res) => {
     return res.status(401).json({ error: 'Invalid username or password.' });
   }
 
+  const csrfToken = generateCsrfToken();
   const userPayload = {
     id: user.id,
     username: user.username,
     full_name: user.full_name,
     role: user.role,
-    bio: user.bio
+    bio: user.bio,
+    csrfToken
   };
 
   const token = generateToken();
   sessions.set(token, userPayload);
 
-  // Defense: Secure cookie configuration with HttpOnly to prevent JavaScript access
+  // Defense: Strict SameSite and HttpOnly session cookies
   res.cookie('session_token', token, {
     httpOnly: true,
     sameSite: 'strict',
@@ -103,7 +167,14 @@ router.post('/login', (req, res) => {
   return res.json({
     message: 'Login successful',
     token,
-    user: userPayload
+    csrfToken,
+    user: {
+      id: user.id,
+      username: user.username,
+      full_name: user.full_name,
+      role: user.role,
+      bio: user.bio
+    }
   });
 });
 
@@ -124,11 +195,20 @@ router.get('/me', authenticate, (req, res) => {
   }
   const db = getDB();
   const fresh = db.prepare('SELECT id, username, full_name, role, bio FROM users WHERE id = ?').get(req.user.id);
-  return res.json({ user: fresh || req.user });
+  return res.json({
+    user: {
+      id: fresh.id,
+      username: fresh.username,
+      full_name: fresh.full_name,
+      role: fresh.role,
+      bio: fresh.bio
+    },
+    csrfToken: req.user.csrfToken
+  });
 });
 
-// Update Bio / Profile
-router.put('/profile', authenticate, (req, res) => {
+// Update Bio / Profile (Protected by verifyCsrf middleware)
+const handleProfileUpdate = (req, res) => {
   if (!req.user) {
     return res.status(401).json({ error: 'Authentication required.' });
   }
@@ -142,8 +222,14 @@ router.put('/profile', authenticate, (req, res) => {
   );
 
   const updated = db.prepare('SELECT id, username, full_name, role, bio FROM users WHERE id = ?').get(req.user.id);
-  return res.json({ message: 'Profile updated', user: updated });
-});
+  req.user.full_name = updated.full_name;
+  req.user.bio = updated.bio;
+
+  return res.json({ message: 'Profile updated successfully', user: updated });
+};
+
+router.put('/profile', authenticate, verifyCsrf, handleProfileUpdate);
+router.post('/profile', authenticate, verifyCsrf, handleProfileUpdate);
 
 // List Users for Member Directory
 router.get('/users', (req, res) => {
@@ -155,5 +241,6 @@ router.get('/users', (req, res) => {
 module.exports = {
   router,
   authenticate,
+  verifyCsrf,
   sessions
 };

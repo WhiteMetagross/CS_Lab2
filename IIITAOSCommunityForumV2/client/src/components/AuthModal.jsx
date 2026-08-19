@@ -44,7 +44,7 @@ export default function AuthModal({ isOpen, mode, onClose, onLoginSuccess }) {
       setPassword('');
       setFullName('');
       setBio('');
-      onLoginSuccess(data.user);
+      onLoginSuccess(data.user, data);
       onClose();
     } catch (err) {
       setError(err.message);

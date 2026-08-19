@@ -8,18 +8,18 @@
 
 ## 1. Project Overview:
 1. This project represents Version 2 of the fullstack community discussion and chatting forum built for the IIIT Allahabad Open Source Community.
-2. In this version, the Stored Cross Site Scripting vulnerability present in Version 1 has been completely mitigated through multilayered defense mechanisms.
+2. In this version, the Cross Site Request Forgery vulnerability present in Version 1 has been completely mitigated through multilayered defense mechanisms.
 3. The platform allows students, contributors, and faculty coordinators to safely publish posts, submit comments, and chat in realtime without security risks.
 
 ## 2. Implemented Defense Architecture:
-1. Context Aware DOM Sanitization: Integration of `DOMPurify` library in client components to strip unauthorized script elements and malicious event handlers prior to DOM insertion.
-2. Cookie Hardening: Setting the `HttpOnly` and `SameSite` strict attributes on authentication session cookies to block access from browser scripts.
-3. Content Security Policy: Enforcement of HTTP Content Security Policy response headers on the Express server to prevent unauthorized inline script execution.
+1. Cryptographic Anti CSRF Synchronizer Tokens: Generation of unpredictable random tokens per authenticated session that must accompany every state changing request via the CSRF token header.
+2. Strict SameSite Cookie Hardening: Setting `sameSite: 'strict'` and `httpOnly: true` attributes on authentication session cookies to block ambient cookie attachment on cross origin requests.
+3. Origin and Referer Request Header Verification: Enforcement of middleware that verifies incoming request `Origin` and `Referer` headers against whitelisted trusted application origins.
 
 ## 3. Technology Stack:
 1. Backend: Node.js with Express framework for REST API routing and security middleware.
 2. Database: Embedded SQLite 3 database using `node:sqlite` storing records in `server/forum.db`.
-3. Frontend: React framework bundled via Vite with `DOMPurify` sanitization.
+3. Frontend: React framework bundled via Vite with automatic Anti CSRF token injection.
 4. User Interface: Professional white theme with full colored card borders, custom role badges, and zero emojis.
 
 ## 4. Preconfigured Community Accounts:
@@ -32,15 +32,15 @@
 
 ## 5. Local Setup and Installation:
 1. Prerequisites: Ensure Node.js version 18 or higher and npm are installed on the system.
-2. Installation: Open terminal in this folder and execute:
+2. Installation: Open terminal in this folder and execute.
 ```bash
 npm install
 ```
-3. Client Build: Compile frontend assets by executing:
+3. Client Build: Compile frontend assets by executing.
 ```bash
 npm run build
 ```
-4. Start Application: Launch the server by executing:
+4. Start Application: Launch the server by executing.
 ```bash
 npm start
 ```
@@ -52,21 +52,21 @@ npm start
 ![Secured community discussion board displaying categorized threads and community updates.](screenshots/forum_home.png)
 1. The main forum dashboard provides a clean overview of community discussions and category navigation.
 
-### 6.2 Secured Discussion Thread:
-![Individual discussion thread view showing author credentials and verified community replies.](screenshots/discussion_thread.png)
-1. Discussion posts render safely with strict sanitization applied across all user responses.
-
-### 6.3 Neutralized XSS Attack Defense:
-![Discussion thread demonstrating DOMPurify sanitization stripping hazardous event handlers safely.](screenshots/sanitized_xss_defense.png)
-1. The DOMPurify engine sanitizes incoming markup before DOM insertion, completely neutralizing injected scripts and preventing unauthorized cookie access.
-
-### 6.4 Realtime Community Chat Stream:
-![Protected live chat room interface with realtime message synchronization.](screenshots/live_chat_room.png)
-1. Community members communicate in realtime within protected chat channels protected by Content Security Policy headers.
-
-### 6.5 Member Profiles Directory:
+### 6.2 Authentic Member Profiles Directory:
 ![Community member directory displaying participant roles and detailed technical biographies.](screenshots/member_profiles.png)
-1. Public member profiles list community contributors, administrators, and students with isolated session cookies.
+1. Public member profiles list community contributors, administrators, and students with protected session cookies.
+
+### 6.3 Cross Origin CSRF Attack Blocked by Server Defense:
+![Attacker forged request rejected with HTTP 403 Forbidden due to missing anti CSRF token and strict cookie policy.](screenshots/csrf_defense_blocked.png)
+1. The server rejects the forged cross origin request with HTTP 403 Forbidden due to missing synchronizer tokens and Origin header mismatch.
+
+### 6.4 Protected Victim Profile After Failed CSRF Exploit:
+![Victim member profile remaining intact and protected against unauthorized cross origin alteration.](screenshots/victim_profile_protected.png)
+1. The victim administrator biography remains completely unchanged and secure on the live community platform.
+
+### 6.5 Realtime Community Chat Channel:
+![Protected live chat room interface with realtime message synchronization.](screenshots/live_chat_room.png)
+1. Community members communicate in realtime within protected chat channels defended by Anti CSRF middleware.
 
 ## 7. Security Defense Documentation:
-1. Please inspect `XSSAttackDefense.md` for a detailed breakdown of all implemented defenses, source code references, and attack neutralization examples.
+1. Please inspect `CSRFAttackDefense.md` for a detailed breakdown of all implemented defenses, source code references, and attack neutralization examples.

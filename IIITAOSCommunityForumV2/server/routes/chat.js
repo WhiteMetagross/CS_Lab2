@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDB } = require('../database');
-const { authenticate } = require('./auth');
+const { authenticate, verifyCsrf } = require('./auth');
 
 // Get recent chat messages
 router.get('/', (req, res) => {
@@ -25,7 +25,7 @@ router.get('/', (req, res) => {
 });
 
 // Post a chat message
-router.post('/', authenticate, (req, res) => {
+router.post('/', authenticate, verifyCsrf, (req, res) => {
   if (!req.user) {
     return res.status(401).json({ error: 'You must be logged in to chat.' });
   }

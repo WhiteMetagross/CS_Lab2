@@ -9,7 +9,7 @@
 ## 1. Project Overview:
 1. This project is a fullstack community chatting and discussion forum designed for the IIIT Allahabad Open Source Community.
 2. The web application allows students, faculty members, and project coordinators to create discussion threads, leave comments, participate in live community chats, and manage member profiles.
-3. This directory represents Version 1 of the platform, which contains an intentional Stored Cross Site Scripting vulnerability for educational security analysis.
+3. This directory represents Version 1 of the platform, which contains an intentional Cross Site Request Forgery vulnerability for educational security analysis.
 
 ## 2. Technology Stack:
 1. Backend: Node.js with Express framework for REST API routing and session management.
@@ -34,45 +34,45 @@
 
 ## 5. Local Setup and Installation:
 1. Prerequisites: Ensure Node.js version 18 or higher and npm are installed on the system.
-2. Installation: Open terminal in this folder and execute:
+2. Installation: Open terminal in this folder and execute.
 ```bash
 npm install
 ```
-3. Client Build: Compile frontend assets by executing:
+3. Client Build: Compile frontend assets by executing.
 ```bash
 npm run build
 ```
-4. Start Application: Launch the server by executing:
+4. Start Application: Launch the server by executing.
 ```bash
 npm start
 ```
 5. Access Portal: Open `http://localhost:3000` in your web browser.
 
-## 6. Visual Interface and Stored XSS Demonstration:
+## 6. Visual Interface and CSRF Attack Demonstration:
 
 ### 6.1 Community Discussions Portal:
-![Main community forum interface displaying active discussions and category filters.](screenshots/forum_home.png)
+![Main community forum dashboard displaying published topics and discussion categories.](screenshots/forum_home.png)
 1. The primary discussion dashboard displays all published community topics, categorized sections, and discussion statistics.
 
-### 6.2 Interactive Discussion Thread:
-![Detailed discussion thread view displaying published responses and community comments.](screenshots/discussion_thread.png)
-1. Members can view individual discussion posts, author roles, and replies left by community participants.
+### 6.2 Authentic Member Profile Before Exploitation:
+![Legitimate member profile of the administrator prior to unauthorized cross origin state tampering.](screenshots/member_profiles.png)
+1. The authentic profile of Administrator Mridankan Mandal displays legitimate credentials and society coordinator details.
 
-### 6.3 Stored XSS Payload Injection:
-![Attacker injecting an unneutralized image error payload into the discussion comment box.](screenshots/stored_xss_payload_injection.png)
-1. An attacker submits a malicious HTML tag with an inline JavaScript event handler into the comment box.
+### 6.3 Attacker Deceptive CSRF Web Portal:
+![External attacker page designed with an embedded hidden form targeting the forum profile endpoint.](screenshots/attacker_csrf_exploit_portal.png)
+1. The attacker hosts an external webpage containing a hidden HTML form that targets the authenticated profile endpoint.
 
-### 6.4 Stored XSS Execution and Cookie Exfiltration:
-![Browser executing the stored XSS payload and popping up an alert box with the session cookie.](screenshots/stored_xss_alert_execution.png)
-1. When any user opens the discussion, the unescaped payload executes immediately in the browser session, exposing the active session cookie.
+### 6.4 Cross Origin Forged Request Execution:
+![Browser automatically attaching ambient session cookies and transmitting the forged POST request.](screenshots/csrf_exploit_execution.png)
+1. When the logged in victim visits the malicious page, the browser automatically attaches ambient session cookies to submit the unauthorized state change.
 
-### 6.5 Live Community Chat Channel:
+### 6.5 Compromised Victim Profile After CSRF Exploitation:
+![Victim member profile altered without user consent or knowledge following the CSRF exploit.](screenshots/victim_profile_compromised.png)
+1. The administrator biography is hijacked and altered on the live forum platform without user consent.
+
+### 6.6 Realtime Community Chat Channel:
 ![Realtime community chat channel with live synchronized conversation stream.](screenshots/live_chat_room.png)
 1. The realtime chat interface allows logged in members to send instant updates across the campus developer network.
-
-### 6.6 Member Directory and Profiles:
-![Community member directory displaying registered participants, assigned roles, and biographies.](screenshots/member_profiles.png)
-1. The member directory lists all registered community participants along with their assigned roles and profiles.
 
 ## 7. Vulnerability Documentation:
 1. Please inspect `Vulnerable.md` for the complete exploitation walkthrough, code analysis, and payload examples.

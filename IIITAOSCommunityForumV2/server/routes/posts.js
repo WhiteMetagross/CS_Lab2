@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDB } = require('../database');
-const { authenticate } = require('./auth');
+const { authenticate, verifyCsrf } = require('./auth');
 
 // List all posts
 router.get('/', (req, res) => {
@@ -69,7 +69,7 @@ router.get('/:id', (req, res) => {
 });
 
 // Create new post
-router.post('/', authenticate, (req, res) => {
+router.post('/', authenticate, verifyCsrf, (req, res) => {
   if (!req.user) {
     return res.status(401).json({ error: 'You must be logged in to create a post.' });
   }
@@ -80,7 +80,6 @@ router.post('/', authenticate, (req, res) => {
   }
 
   const db = getDB();
-  // Store directly in SQLite database
   const result = db.prepare(`
     INSERT INTO posts (user_id, title, category, content)
     VALUES (?, ?, ?, ?)
@@ -107,7 +106,7 @@ router.post('/', authenticate, (req, res) => {
 });
 
 // Add comment to a post
-router.post('/:id/comments', authenticate, (req, res) => {
+router.post('/:id/comments', authenticate, verifyCsrf, (req, res) => {
   if (!req.user) {
     return res.status(401).json({ error: 'You must be logged in to comment.' });
   }
@@ -123,7 +122,6 @@ router.post('/:id/comments', authenticate, (req, res) => {
     return res.status(404).json({ error: 'Post not found.' });
   }
 
-  // Store directly in SQLite database
   const result = db.prepare(`
     INSERT INTO comments (post_id, user_id, content)
     VALUES (?, ?, ?)
@@ -149,7 +147,7 @@ router.post('/:id/comments', authenticate, (req, res) => {
 });
 
 // Delete post
-router.delete('/:id', authenticate, (req, res) => {
+router.delete('/:id', authenticate, verifyCsrf, (req, res) => {
   if (!req.user) {
     return res.status(401).json({ error: 'Authentication required.' });
   }
