@@ -51,27 +51,27 @@ npm start
 ## 6. Visual Interface and CSRF Attack Demonstration:
 
 ### 6.1 Community Discussions Portal:
-![Main community forum dashboard displaying published topics and discussion categories.](screenshots/forum_home.png)
+![Main community forum dashboard displaying published topics and discussion categories.](screenshots/forumHome.png)
 1. The primary discussion dashboard displays all published community topics, categorized sections, and discussion statistics.
 
 ### 6.2 Authentic Member Profile Before Exploitation:
-![Legitimate member profile of the administrator prior to unauthorized cross origin state tampering.](screenshots/member_profiles.png)
+![Legitimate member profile of the administrator prior to unauthorized cross origin state tampering.](screenshots/memberProfiles.png)
 1. The authentic profile of Administrator Mridankan Mandal displays legitimate credentials and society coordinator details.
 
 ### 6.3 Attacker Deceptive CSRF Web Portal:
-![External attacker page designed with an embedded hidden form targeting the forum profile endpoint.](screenshots/attacker_csrf_exploit_portal.png)
+![External attacker page designed with an embedded hidden form targeting the forum profile endpoint.](screenshots/attackerCsrfExploitPortal.png)
 1. The attacker hosts an external webpage containing a hidden HTML form that targets the authenticated profile endpoint.
 
 ### 6.4 Cross Origin Forged Request Execution:
-![Browser automatically attaching ambient session cookies and transmitting the forged POST request.](screenshots/csrf_exploit_execution.png)
+![Browser automatically attaching ambient session cookies and transmitting the forged POST request.](screenshots/csrfExploitExecution.png)
 1. When the logged in victim visits the malicious page, the browser automatically attaches ambient session cookies to submit the unauthorized state change.
 
 ### 6.5 Compromised Victim Profile After CSRF Exploitation:
-![Victim member profile altered without user consent or knowledge following the CSRF exploit.](screenshots/victim_profile_compromised.png)
+![Victim member profile altered without user consent or knowledge following the CSRF exploit.](screenshots/victimProfileCompromised.png)
 1. The administrator biography is hijacked and altered on the live forum platform without user consent.
 
 ### 6.6 Realtime Community Chat Channel:
-![Realtime community chat channel with live synchronized conversation stream.](screenshots/live_chat_room.png)
+![Realtime community chat channel with live synchronized conversation stream.](screenshots/liveChatRoom.png)
 1. The realtime chat interface allows logged in members to send instant updates across the campus developer network.
 
 ## 7. Vulnerability Documentation:

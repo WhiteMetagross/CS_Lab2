@@ -21,7 +21,7 @@ function verifyCsrf(req, res, next) {
     return next();
   }
 
-  const submittedToken = req.headers['x_csrf_token'] || req.body?.csrf_token;
+  const submittedToken = req.headers['x_csrf_token'] || req.body?.csrfToken || req.body?.csrf_token;
   const expectedToken = req.user?.csrfToken;
 
   if (!submittedToken || !expectedToken || submittedToken !== expectedToken) {
@@ -72,7 +72,7 @@ if (origin && !allowedOrigins.includes(origin)) {
 1. Malicious Forged Payload.
 ```html
 <form action="http://localhost:3000/api/auth/profile" method="POST">
-  <input type="hidden" name="full_name" value="Attacker Impersonator" />
+  <input type="hidden" name="fullName" value="Attacker Impersonator" />
   <input type="hidden" name="bio" value="Compromised via CSRF" />
 </form>
 ```
@@ -87,7 +87,7 @@ fetch('http://localhost:3000/api/auth/profile', {
   method: 'POST',
   credentials: 'include',
   headers: { 'Content_Type': 'application/json' },
-  body: JSON.stringify({ full_name: 'Compromised User' })
+  body: JSON.stringify({ fullName: 'Compromised User' })
 });
 ```
 2. Vulnerable Behavior in Version 1: The browser sends ambient cookies with CORS credentials enabled and the profile changes.

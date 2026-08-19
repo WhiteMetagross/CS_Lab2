@@ -17,7 +17,7 @@
 1. Purpose: Contains Version 1 of the web application which is intentionally vulnerable to Cross Site Request Forgery.
 2. Server Code: Contains the Express server in `server/server.js`, SQLite database initializers in `server/database.js`, authentication endpoints in `server/routes/auth.js`, discussion routes in `server/routes/posts.js`, and live chat handlers in `server/routes/chat.js`.
 3. Client Code: Contains the React frontend bundled via Vite in `client/` and served through `public/`.
-4. Attacker Exploit: Includes `public/attacker_csrf_exploit.html` demonstrating cross origin hidden form auto submission against the live forum.
+4. Attacker Exploit: Includes `public/attackerCsrfExploit.html` demonstrating cross origin hidden form auto submission against the live forum.
 5. Documentation: Includes `ReadMe.md` with setup instructions and `Vulnerable.md` with a detailed attack manual and code breakdown.
 
 ### 2.2 Folder `IIITAOSCommunityForumV2`:
@@ -41,11 +41,11 @@
 ## 5. How an Attack is Executed on Version 1:
 1. A legitimate user or administrator logs into the forum platform using credentials such as `mridankan` with password `mridankan123`.
 2. The browser receives the session cookie and retains it in storage for `localhost:3000`.
-3. While the session is active, the victim is lured into opening an external malicious page such as `attacker_csrf_exploit.html`.
+3. While the session is active, the victim is lured into opening an external malicious page such as `attackerCsrfExploit.html`.
 4. The malicious page contains an invisible HTML form targeting `http://localhost:3000/api/auth/profile` with forged input values.
 ```html
 <form id="csrfForm" action="http://localhost:3000/api/auth/profile" method="POST">
-  <input type="hidden" name="full_name" value="Mridankan Mandal (Hijacked via CSRF)" />
+  <input type="hidden" name="fullName" value="Mridankan Mandal (Hijacked via CSRF)" />
   <input type="hidden" name="bio" value="Account profile compromised via Cross Site Request Forgery." />
 </form>
 <script>
@@ -60,7 +60,7 @@
 ```javascript
 function verifyCsrf(req, res, next) {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
-  const submittedToken = req.headers['x_csrf_token'] || req.body?.csrf_token;
+  const submittedToken = req.headers['x_csrf_token'] || req.body?.csrfToken || req.body?.csrf_token;
   const expectedToken = req.user?.csrfToken;
   if (!submittedToken || !expectedToken || submittedToken !== expectedToken) {
     return res.status(403).json({ error: 'CSRF Protection: Missing or invalid Anti CSRF synchronizer token.' });
@@ -68,7 +68,7 @@ function verifyCsrf(req, res, next) {
   next();
 }
 ```
-2. SameSite Strict Session Cookies: In file `server/routes/auth.js`, authentication cookies are configured with `sameSite: 'strict'` and `httpOnly: true`.
+7. SameSite Strict Session Cookies: In file `server/routes/auth.js`, authentication cookies are configured with `sameSite: 'strict'` and `httpOnly: true`.
 ```javascript
 res.cookie('session_token', token, {
   httpOnly: true,
@@ -76,7 +76,7 @@ res.cookie('session_token', token, {
   path: '/'
 });
 ```
-3. Origin and Referer Header Verification: In file `server/routes/auth.js`, security middleware rejects requests dispatched from untrusted foreign origins.
+8. Origin and Referer Header Verification: In file `server/routes/auth.js`, security middleware rejects requests dispatched from untrusted foreign origins.
 ```javascript
 const origin = req.headers.origin;
 const allowedOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];

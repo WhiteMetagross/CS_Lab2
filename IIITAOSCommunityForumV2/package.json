@@ -1,7 +1,7 @@
 {
-  "name": "iiita-stored-xss-forum",
+  "name": "iiita-csrf-forum",
   "version": "1.0.0",
-  "description": "IIIT-A Open Source Community Chatting Forum - Stored XSS Demonstration and Mitigation",
+  "description": "IIIT Allahabad Open Source Community Forum: CSRF Demonstration and Mitigation",
   "main": "server/server.js",
   "scripts": {
     "start": "node server/server.js",
@@ -10,7 +10,8 @@
     "dev:server": "node server/server.js"
   },
   "keywords": [
-    "stored-xss",
+    "csrf",
+    "cross-site-request-forgery",
     "cybersecurity",
     "iiit-allahabad",
     "sqlite",

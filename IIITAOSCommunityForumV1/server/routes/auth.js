@@ -126,12 +126,13 @@ const handleProfileUpdate = (req, res) => {
   if (!req.user) {
     return res.status(401).json({ error: 'Authentication required. No valid session cookie found.' });
   }
-  const { full_name, bio } = req.body;
+  const fullName = req.body.fullName || req.body.full_name || req.user.full_name;
+  const bio = req.body.bio !== undefined ? req.body.bio : req.user.bio;
   const db = getDB();
 
   db.prepare('UPDATE users SET full_name = ?, bio = ? WHERE id = ?').run(
-    full_name || req.user.full_name,
-    bio !== undefined ? bio : req.user.bio,
+    fullName,
+    bio,
     req.user.id
   );
 

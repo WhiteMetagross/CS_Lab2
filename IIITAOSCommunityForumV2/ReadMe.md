@@ -49,23 +49,23 @@ npm start
 ## 6. Visual Interface and Defense Verification:
 
 ### 6.1 Community Discussions Dashboard:
-![Secured community discussion board displaying categorized threads and community updates.](screenshots/forum_home.png)
+![Secured community discussion board displaying categorized threads and community updates.](screenshots/forumHome.png)
 1. The main forum dashboard provides a clean overview of community discussions and category navigation.
 
 ### 6.2 Authentic Member Profiles Directory:
-![Community member directory displaying participant roles and detailed technical biographies.](screenshots/member_profiles.png)
+![Community member directory displaying participant roles and detailed technical biographies.](screenshots/memberProfiles.png)
 1. Public member profiles list community contributors, administrators, and students with protected session cookies.
 
 ### 6.3 Cross Origin CSRF Attack Blocked by Server Defense:
-![Attacker forged request rejected with HTTP 403 Forbidden due to missing anti CSRF token and strict cookie policy.](screenshots/csrf_defense_blocked.png)
+![Attacker forged request rejected with HTTP 403 Forbidden due to missing anti CSRF token and strict cookie policy.](screenshots/csrfDefenseBlocked.png)
 1. The server rejects the forged cross origin request with HTTP 403 Forbidden due to missing synchronizer tokens and Origin header mismatch.
 
 ### 6.4 Protected Victim Profile After Failed CSRF Exploit:
-![Victim member profile remaining intact and protected against unauthorized cross origin alteration.](screenshots/victim_profile_protected.png)
+![Victim member profile remaining intact and protected against unauthorized cross origin alteration.](screenshots/victimProfileProtected.png)
 1. The victim administrator biography remains completely unchanged and secure on the live community platform.
 
 ### 6.5 Realtime Community Chat Channel:
-![Protected live chat room interface with realtime message synchronization.](screenshots/live_chat_room.png)
+![Protected live chat room interface with realtime message synchronization.](screenshots/liveChatRoom.png)
 1. Community members communicate in realtime within protected chat channels defended by Anti CSRF middleware.
 
 ## 7. Security Defense Documentation:

