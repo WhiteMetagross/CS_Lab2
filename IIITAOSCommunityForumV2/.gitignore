@@ -1,0 +1,5 @@
+node_modules/
+client/node_modules/
+server/forum.db
+*.log
+.DS_Store

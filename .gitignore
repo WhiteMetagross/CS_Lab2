@@ -1,5 +1,16 @@
-node_modules/
-client/node_modules/
-server/forum.db
+# Ignore root development files only
+/client/
+/server/
+/public/
+/package.json
+/package-lock.json
+/node_modules/
+/index.pdf
+/DEMO_SCRIPT.md
+/README.md
+/ReadMe.md
+/Vulnerable.md
+
+# General ignores
 *.log
 .DS_Store

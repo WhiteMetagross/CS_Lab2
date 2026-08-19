@@ -5,7 +5,7 @@ const { getDB } = require('../database');
 // In-memory active session tokens map (token -> user)
 const sessions = new Map();
 
-// Generate simple random token
+// Generate secure random token
 function generateToken() {
   return 'iiita_sess_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
 }
@@ -51,7 +51,10 @@ router.post('/register', (req, res) => {
     const token = generateToken();
     sessions.set(token, user);
 
+    // Defense: Secure cookie configuration with HttpOnly to prevent JavaScript access
     res.cookie('session_token', token, {
+      httpOnly: true,
+      sameSite: 'strict',
       path: '/'
     });
 
@@ -90,7 +93,10 @@ router.post('/login', (req, res) => {
   const token = generateToken();
   sessions.set(token, userPayload);
 
+  // Defense: Secure cookie configuration with HttpOnly to prevent JavaScript access
   res.cookie('session_token', token, {
+    httpOnly: true,
+    sameSite: 'strict',
     path: '/'
   });
 

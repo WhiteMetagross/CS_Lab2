@@ -21,6 +21,19 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Defense: Content Security Policy (CSP) and Secure Headers Middleware
+app.use((req, res, next) => {
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self';"
+  );
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  next();
+});
+
 app.use(authenticate);
 
 // API Routes
@@ -28,7 +41,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/posts', postsRouter);
 app.use('/api/chat', chatRouter);
 
-// Reset Database API (useful if needed to restore seed data)
+// Reset Database API
 app.post('/api/admin/reset-db', (req, res) => {
   resetDatabase();
   return res.json({ message: 'Database reset to default community seed data.' });
@@ -53,6 +66,6 @@ if (require('fs').existsSync(clientDistPath)) {
 // Start Server
 app.listen(PORT, () => {
   console.log(`======================================================`);
-  console.log(`IIIT-A Open Source Community Forum running at: http://localhost:${PORT}`);
+  console.log(`IIIT-A Open Source Community Forum (V2 Secure) running at: http://localhost:${PORT}`);
   console.log(`======================================================`);
 });
