@@ -134,27 +134,19 @@ h1, h2, h3, h4 {
   font-weight: 700;
 }
 
-/* Cards with Full Colored Borders */
+/* Base Card */
 .card {
   background-color: #ffffff;
-  border: 2px solid var(--border-accent);
+  border: 2px solid var(--primary-blue);
   border-radius: 8px;
   padding: 22px;
   margin-bottom: 18px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
   transition: all 0.2s ease;
 }
 
 .card-accent-blue {
   border: 2px solid var(--primary-blue);
-}
-
-.card-accent-emerald {
-  border: 2px solid var(--emerald-green);
-}
-
-.card-accent-indigo {
-  border: 2px solid var(--indigo-accent);
 }
 
 .card-header {
@@ -387,7 +379,7 @@ h1, h2, h3, h4 {
   border: 1px solid #93c5fd;
 }
 
-/* Post Cards with Full Colored Borders */
+/* Post Cards with Full Colored Borders around all 4 sides */
 .post-item {
   border-radius: 8px;
   padding: 18px 20px;
@@ -478,7 +470,7 @@ h1, h2, h3, h4 {
   font-weight: 600;
 }
 
-/* Discussion Detail Card */
+/* Discussion Detail Card with full 4-sided blue border */
 .discussion-box {
   background: linear-gradient(to bottom, #f8fafc, #ffffff);
   border: 2px solid #2563eb;
@@ -533,7 +525,7 @@ h1, h2, h3, h4 {
   line-height: 1.45;
 }
 
-/* Chat Layout */
+/* Chat Layout with full 4-sided blue border */
 .chat-container {
   display: flex;
   flex-direction: column;
@@ -580,7 +572,7 @@ h1, h2, h3, h4 {
   background: linear-gradient(to right, #f8fafc, #eff6ff);
 }
 
-/* Member Directory Cards */
+/* Member Directory Cards with full 4-sided blue border */
 .member-card {
   background-color: #ffffff;
   border: 2px solid #3b82f6;
@@ -596,7 +588,7 @@ h1, h2, h3, h4 {
   box-shadow: 0 6px 14px rgba(37, 99, 235, 0.12);
 }
 
-/* Modal */
+/* Modal with full blue border */
 .modal-overlay {
   position: fixed;
   top: 0;
