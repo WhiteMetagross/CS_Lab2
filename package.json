@@ -1,0 +1,29 @@
+{
+  "name": "iiita-stored-xss-forum",
+  "version": "1.0.0",
+  "description": "IIIT-A Open Source Community Chatting Forum - Stored XSS Demonstration and Mitigation",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "build": "npm --prefix client run build",
+    "dev:client": "npm --prefix client run dev",
+    "dev:server": "node server/server.js"
+  },
+  "keywords": [
+    "stored-xss",
+    "cybersecurity",
+    "iiit-allahabad",
+    "sqlite",
+    "express",
+    "react"
+  ],
+  "author": "IIB2024017",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2"
+  }
+}
